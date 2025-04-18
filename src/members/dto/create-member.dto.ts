@@ -28,8 +28,10 @@ export class CreateMemberDto {
   @IsString()
   name: string;
 
-  @IsNumber()
-  contribution: number;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsNumber({}, { each: true })
+  contributions: number[];
 
   @IsString()
   @IsOptional()
@@ -43,11 +45,11 @@ export class CreateMemberDto {
   userType: string;
 
   @IsArray()
-  @ArrayNotEmpty() // Optional: Ensures the array is not empty
+  @ArrayNotEmpty()
   @IsIn(MONTHS, {
-    each: true, // Validates each element in the array
+    each: true,
     message: 'Each month must be one of: ' + MONTHS.join(', '),
   })
-  @Type(() => String) // Ensures proper deserialization of array elements
+  @Type(() => String)
   receivableMonths: string[];
 }

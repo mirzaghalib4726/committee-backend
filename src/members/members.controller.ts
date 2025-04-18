@@ -10,7 +10,10 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { CreateMemberDto } from './dto/create-member.dto';
-import { UpdateMemberDto } from './dto/update-member.dto';
+import {
+  UpdateMemberDto,
+  UpdateMemberPaymentStatusDto,
+} from './dto/update-member.dto';
 import { Member } from './entities/member.entity';
 import { MembersService } from './members.service';
 
@@ -36,6 +39,15 @@ export class MembersController {
     @Body() updateMemberDto: UpdateMemberDto,
   ): Promise<Member> {
     return this.membersService.update(id, updateMemberDto);
+  }
+
+  @Patch(':id/payment-status')
+  @UsePipes(new ValidationPipe())
+  async payment_status(
+    @Param('id') id: string,
+    @Body() updateMemberPaymentStatusDto: UpdateMemberPaymentStatusDto,
+  ): Promise<Member> {
+    return this.membersService.payment_status(id, updateMemberPaymentStatusDto);
   }
 
   @Delete(':id')
