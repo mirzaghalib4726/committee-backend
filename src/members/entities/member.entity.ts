@@ -8,8 +8,8 @@ export class Member {
   @Prop({ required: true, unique: true })
   name: string;
 
-  @Prop({ required: true, default: 0 })
-  contribution: number;
+  @Prop({ type: [Number], required: true })
+  contributions: number[];
 
   @Prop()
   bankName?: string;
@@ -17,7 +17,7 @@ export class Member {
   @Prop({ required: true, unique: true })
   bankAccountNo: string;
 
-  @Prop({ enum: ['User', 'Admin'], required: true })
+  @Prop({ type: String, enum: ['User', 'Admin'], required: true })
   userType: string;
 
   @Prop({
@@ -39,6 +39,14 @@ export class Member {
     required: true,
   })
   receivableMonths: string[];
+
+  @Prop({
+    type: Map,
+    of: Boolean,
+    default: {},
+    required: false,
+  })
+  paymentStatus?: Map<string, boolean>;
 }
 
 export const MemberSchema = SchemaFactory.createForClass(Member);
