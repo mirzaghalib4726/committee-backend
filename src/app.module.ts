@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
+import { HttpExceptionFilter } from 'src/http-exception.filter';
 import { MembersModule } from 'src/members/members.module';
 
 @Module({
@@ -24,6 +26,12 @@ import { MembersModule } from 'src/members/members.module';
     MembersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+  ],
 })
 export class AppModule {}

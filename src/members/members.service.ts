@@ -1,20 +1,12 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, HttpException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateMemberDto } from './dto/create-member.dto';
-import { UpdateMemberDto } from './dto/update-member.dto';
+import {
+  UpdateMemberDto,
+  UpdateMemberPaymentStatusDto,
+} from './dto/update-member.dto';
 import { Member, MemberDocument } from './entities/member.entity';
-
-interface MonthValue {
-  month: string;
-  value: number;
-}
-
-interface MemberWithMonths extends Member {
-  months: string[];
-  values: number[];
-  monthValues: MonthValue[];
-}
 
 @Injectable()
 export class MembersService {
@@ -25,67 +17,25 @@ export class MembersService {
   async create(createMemberDto: CreateMemberDto): Promise<Member> {
     try {
       const createdMember = new this.memberModel(createMemberDto);
-      return createdMember.save();
+      const user = await createdMember.save();
+      return user;
     } catch (error) {
-      const mongoError = error as { code?: number };
+      const mongoError = error as { code?: number; errorResponse?: any };
       if (mongoError.code === 11000) {
         // MongoDB duplicate key error
-        throw new ConflictException('Name already exists');
+        throw new ConflictException(mongoError.errorResponse.errmsg);
       }
       throw error;
     }
   }
 
-  async findAll(): Promise<MemberWithMonths[]> {
+  async findAll(): Promise<Member[]> {
     const members = await this.memberModel
       .find()
-      .sort({ contribution: -1 })
+      .sort({ bankAccountNo: 1 })
       .exec();
 
-    const allowedMonths = members.map((member) => {
-      let months: string[] = [];
-      let values: number[] = [];
-
-      // Convert name to lowercase for case-insensitive comparison
-      const name = member.name.toLowerCase();
-
-      // Assign months based on name
-      if (name === 'faran') {
-        months = ['July'];
-        values = [600000];
-      } else if (name === 'airaj') {
-        months = ['May'];
-        values = [600000];
-      } else if (name === 'usama') {
-        months = ['August'];
-        values = [600000];
-      } else if (name === 'mohsin' || name === 'ubaid') {
-        months = ['June'];
-        values = [300000];
-      } else if (name === 'wajih') {
-        months = ['September'];
-        values = [300000];
-      } else if (name === 'haseeb') {
-        months = ['September', 'November'];
-        values = [300000, 600000];
-      } else if (['umar', 'asad', 'muhamman', 'foxy'].includes(name)) {
-        months = ['October'];
-        values = [150000];
-      }
-
-      // Return member with months added
-      return {
-        ...member.toObject(),
-        months,
-        values,
-        monthValues: months.map((month, index) => ({
-          month,
-          value: values[index],
-        })),
-      };
-    });
-
-    return allowedMonths;
+    return members;
   }
 
   async findOne(id: string): Promise<Member> {
@@ -104,6 +54,26 @@ export class MembersService {
       throw new Error(`Member with ID ${id} not found`);
     }
     return member;
+  }
+
+  async payment_status(
+    id: string,
+    updateMemberDto: UpdateMemberPaymentStatusDto,
+  ): Promise<Member> {
+    try {
+      const { month, receiverId, paid } = updateMemberDto;
+      const member = await this.memberModel.findByIdAndUpdate(
+        id,
+        { $set: { [`paymentStatus.${month}_${receiverId}`]: paid } },
+        { new: true },
+      );
+      if (!member) {
+        throw new Error(`Member with ID ${id} not found`);
+      }
+      return member;
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500);
+    }
   }
 
   async remove(id: string): Promise<void> {
